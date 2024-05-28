@@ -1,10 +1,10 @@
 import NavBar from "@/components/navigation/Navbar";
-import { Box, Button } from "@mui/material";
+import { Box, Button, Grid } from "@mui/material";
 import { useState } from "react";
 import AddGroup from "@/components/manipulateData/addGroup";
 import { gql, useQuery } from "@apollo/client";
-import { GroupType } from "@/types/group.type";
-import { GroupCard } from "@/components/displayData/GroupCard";
+import { Group } from "@/types/group.type";
+import GroupCard from "@/components/displayData/GroupCard";
 import { useRouter } from "next/router";
 
 const GET_ALL_GROUPS = gql`
@@ -13,45 +13,54 @@ const GET_ALL_GROUPS = gql`
       id
       name
       subject
+      totalStudents
     }
   }
 `;
 
-function Groups() {
+const Groups = () => {
   const router = useRouter();
-  const redirectGroups = () => {
-    router.push("/groups");
-  };
 
   const [groups, setGroups] = useState<[]>([]);
 
-  const { loading, error } = useQuery(GET_ALL_GROUPS, {
+  const { loading, error, refetch } = useQuery(GET_ALL_GROUPS, {
     onCompleted: (data: any) => {
-      setGroups(data);
-      console.log(data?.getAllGroups)
+      setGroups(data?.getAllGroups);
     },
   });
 
+  const handleUpdate = () => {
+    console.log("handleUpdate called");
+    refetch().then(({ data }) => {
+      setGroups(data?.getAllGroups);
+      console.log("refetch complete", data);
+    });
+  }
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error!</p>;
 
   return (
-    <>
+    <Box>
       <NavBar />
-      <AddGroup />
-      <Box>
-        {groups?.map((group: GroupType, i) => (
-          <Box padding={2} onClick={redirectGroups} key={i}>
-            <GroupCard
-              id={group.id}
-              name={group.name}
-              subject={group.subject}
-            />
-          </Box>
-        ))}
+      <Box px={32}>
+        <Box display={"flex"} justifyContent={"end"} mb={2}>
+           <AddGroup onUpdate={handleUpdate}  /> 
+        </Box>
+        <Grid
+          container
+          spacing={2}
+          columnSpacing={{ xs: 1, sm: 2, md: 4, lg: 6 }}
+          justifyContent={"center"}
+        >
+          {groups.map((group: Group, i) => (
+            <Box padding={0} key={i}>
+              <GroupCard group={group} />
+            </Box>
+          ))}
+        </Grid>
       </Box>
-    </>
+    </Box>
   );
 }
 

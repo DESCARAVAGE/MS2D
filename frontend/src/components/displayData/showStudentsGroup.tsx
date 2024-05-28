@@ -1,8 +1,15 @@
+import { Student } from "@/types/student.type";
+import { gql, useLazyQuery, useMutation } from "@apollo/client";
+import { useRouter } from "next/router";
+import { useEffect, useState, useContext } from "react";
 import * as React from "react";
-import { useState, useContext,forwardRef, useImperativeHandle } from "react";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/DeleteOutlined";
+import SaveIcon from "@mui/icons-material/Save";
+import CancelIcon from "@mui/icons-material/Close";
 import {
   GridRowsProp,
   GridRowModesModel,
@@ -18,18 +25,31 @@ import {
   GridSlots,
   GridValueGetter,
 } from "@mui/x-data-grid";
-import { gql, useLazyQuery, useMutation, useQuery } from "@apollo/client";
-import { Student } from "@/types/student.type";
-import { useRouter } from "next/router";
-import UpdateStudentModal from "../manipulateData/updateStudent";
+import {
+  randomCreatedDate,
+  randomTraderName,
+  randomId,
+  randomArrayItem,
+} from "@mui/x-data-grid-generator";
 import MessageFlashContext from "@/context/MessageFlash";
+import UpdateStudentModal from "../manipulateData/updateStudent";
 
-const GET_ALL_STUDENTS = gql`
-  query Query {
-    getAllStudents {
+const GET_STUDENTS_BY_GROUP = gql`
+  query Query($groupId: Float!) {
+    getStudentsByGroup(groupId: $groupId) {
       id
       lastname
       firstname
+    }
+  }
+`;
+
+const GET_ONE_STUDENT = gql`
+  query Query($getOneStudentId: Float!) {
+    getOneStudent(id: $getOneStudentId) {
+      id
+      firstname
+      lastname
       group {
         id
         name
@@ -39,66 +59,29 @@ const GET_ALL_STUDENTS = gql`
   }
 `;
 
-const GET_ONE_STUDENT = gql`
-query Query($getOneStudentId: Float!) {
-  getOneStudent(id: $getOneStudentId) {
-    id
-    firstname
-    lastname
-    group {
-      id
-      name
-      subject
-    }
-  }
-}
-`;
-
 const DELETE_STUDENT = gql`
-mutation Mutation($deleteStudentId: Float!) {
-  deleteStudent(id: $deleteStudentId)
-}
+  mutation Mutation($deleteStudentId: Float!) {
+    deleteStudent(id: $deleteStudentId)
+  }
 `;
 
-export interface StudentTab {
-  id: number;
-  firstname: string;
-  lastname: string;
-  group: {
-    id: number;
-    name: string;
-    subject: string;
-    totalStudents: number;
-
-  };
-  isNew?: boolean;
-}
-
-export interface DisplayStudentsTabHandle {
-  refetchData: () => void;
-}
-
-const DisplayStudentsTab = forwardRef((props, ref) => { 
+function ShowStudentsGroup() {
   const router = useRouter();
   const { id } = router.query;
-
   const [isPopUp, setIsPopUp] = useState(false);
   const messageFlashCtx = useContext(MessageFlashContext);
-
-  const [students, setStudents] = useState<Student[] | StudentTab[]>([]);
-  const { loading, error, refetch } = useQuery(GET_ALL_STUDENTS, {
-    onCompleted: (data: any) => {
-      setStudents(data?.getAllStudents);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [getStudents, { loading, error }] = useLazyQuery(
+    GET_STUDENTS_BY_GROUP,
+    {
+      variables: {
+        groupId: Number(id),
+      },
+      onCompleted: (data) => {
+        setStudents(data.getStudentsByGroup || []);
+      },
     }
-  });
-
-  useImperativeHandle(ref, () => ({
-    refetchData() {
-      refetch().then(({ data }) => {
-        setStudents(data?.getAllStudents);
-      });
-    }
-  }));
+  );
 
   const [student, setStudent] = useState<Student | null>(null);
   const [getStudent] = useLazyQuery(GET_ONE_STUDENT, {
@@ -106,9 +89,15 @@ const DisplayStudentsTab = forwardRef((props, ref) => {
       getOneStudentId: Number(id),
     },
     onCompleted: (data: { getOneStudentId: Student }) => {
-      setStudent(data.getOneStudentId)
-    }
+      setStudent(data.getOneStudentId);
+    },
   });
+
+  useEffect(() => {
+    if (id) {
+      getStudents();
+    }
+  }, [id]);
 
   const [deleteStudentRequest] = useMutation(DELETE_STUDENT);
   const handleDeleteClick = (id: GridRowId) => async () => {
@@ -120,7 +109,9 @@ const DisplayStudentsTab = forwardRef((props, ref) => {
         cache.modify({
           fields: {
             getAllStudents(existingStudents = []) {
-              return existingStudents.filter((studentRef: any) => studentRef.__ref !== `Student:${id}`);
+              return existingStudents.filter(
+                (studentRef: any) => studentRef.__ref !== `Student:${id}`
+              );
             },
           },
         });
@@ -140,12 +131,15 @@ const DisplayStudentsTab = forwardRef((props, ref) => {
   };
 
   const handleSuccessNotif = () => {
-    messageFlashCtx.success('Student supp with success !')
-  }
+    messageFlashCtx.success("Student supp with success !");
+  };
 
   const [rows, setRows] = useState(students);
   const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
-  const handleRowEditStop: GridEventListener<"rowEditStop"> = (params, event) => {
+  const handleRowEditStop: GridEventListener<"rowEditStop"> = (
+    params,
+    event
+  ) => {
     if (params.reason === GridRowEditStopReasons.rowFocusOut) {
       event.defaultMuiPrevented = true;
     }
@@ -167,15 +161,8 @@ const DisplayStudentsTab = forwardRef((props, ref) => {
     {
       field: "lastname",
       headerName: "Lastname",
-      width: 180, 
-      editable: true,
-    },
-    {
-      field: "group",
-      headerName: "Group",
       width: 180,
       editable: true,
-      valueGetter: (params: GridValueGetter) => params.name,
     },
     {
       field: "actions",
@@ -230,14 +217,18 @@ const DisplayStudentsTab = forwardRef((props, ref) => {
         }}
       />
       <Box>
-      {isPopUp && student ? (
-            <UpdateStudentModal isOpen={isPopUp} onClose={closeModal} student={student} ></UpdateStudentModal>
-          ) : (
-            ""
-          )}
+        {isPopUp && student ? (
+          <UpdateStudentModal
+            isOpen={isPopUp}
+            onClose={closeModal}
+            student={student}
+          ></UpdateStudentModal>
+        ) : (
+          ""
+        )}
       </Box>
     </Box>
   );
-})
+}
 
-export default DisplayStudentsTab;
+export default ShowStudentsGroup;

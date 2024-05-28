@@ -1,14 +1,15 @@
 import { ILike, DeleteResult } from "typeorm"; // Ilike n'est pas sensible à la casse contrairement à Like.
-import { Group } from "../entities/group";
+import { Group } from "../entities/group.entity";
 
 export function findGroupById(id: number): Promise<Group | null> {
   return Group.findOne({
     where: { id: id },
+    relations: ["students"]
   });
 }
 
 export async function getAllGroups(): Promise<Group[]> {
-  const allGroup = await Group.find();
+  const allGroup = await Group.find({ relations: ["students"] });
   if (allGroup.length === 0) {
     throw new Error("the BDD is empty...");
   } else {
@@ -44,6 +45,7 @@ export async function getGroupsByterms(terms: string = ''): Promise<Group[]> {
 export async function create(GroupData: {
   name: string;
   subject: string;
+  totalStudents?: number;
 }): Promise<String | Group> {
   // Vérifier si le pays existe déjà
   const existingGroup = await Group.findOne({ where: { name: GroupData.name } });

@@ -1,5 +1,5 @@
 import { Arg, Mutation, Query, Resolver } from "type-graphql";
-import { Group } from "../entities/group";
+import { Group } from "../entities/group.entity";
 import * as groupService from "../services/group.service";
 import { CreateGroupInputType } from "../types/group/CreateGroupInputType";
 import { UpdateGroupInputType } from "../types/group/UpdateGroupInputType";
@@ -10,6 +10,11 @@ export class GroupResolver {
   @Query(() => [Group])
   async getAllGroups(): Promise<Group[]> {
     return await groupService.getAllGroups();
+  }
+
+  @Query(() => Group)
+  getOneGroupById(@Arg("id") id: number): Promise<Group | null> {
+    return groupService.findGroupById(id);
   }
 
   @Query(() => [Group])
@@ -26,8 +31,8 @@ export class GroupResolver {
   }
 
   @Mutation(() => Group)
-  createGroup(@Arg("Group") Group: CreateGroupInputType): Promise<Group | String> {
-    return groupService.create({ ...Group});
+  createGroup(@Arg("group") group: CreateGroupInputType): Promise<Group | String> {
+    return groupService.create({ ...group});
   }
 
   @Mutation(() => Group)

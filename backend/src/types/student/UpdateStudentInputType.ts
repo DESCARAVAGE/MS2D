@@ -1,4 +1,5 @@
 import { Field, InputType } from "type-graphql";
+import { Group } from "../../entities/group.entity";
 
 @InputType()
 export class UpdateStudentInputType {
@@ -10,4 +11,7 @@ export class UpdateStudentInputType {
 
     @Field()
     lastname: string;
+
+    @Field()
+    group: number;
 }

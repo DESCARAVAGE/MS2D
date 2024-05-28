@@ -1,3 +1,33 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --spacingx2: 20px;
+  --spacing: 10px;
+  --spacing-2: 8px;
+  --spacing-5: 5px;
+
+  --font-size-h2: 1.5rem;
+
+  --primary-color-dark: #5bc27c;
+  --primary-color-medium: #97d8ac;
+  --primary-color-light: #e1f4e7;
+
+  --secondary-color-dark: #3e878e;
+  --secondary-color-medium: #8ec8cd;
+  --secondary-color-light: #e3f1f3;
+
+  --thirdly-color-medium: #f9d9c8;
+  --thirdly-color-light: #fdf2ed;
+
+  --fourth-color-dark: #0a0a0a;
+  --fourth-color-medium: #999999;
+  --fourth-color-light: #f5f5f5;
+}
+
 * {
   box-sizing: border-box;
   list-style: none;
@@ -64,8 +94,8 @@ h2{
 }
 
 button:hover {
-  color: #ec5a13;
-  border: 2px solid #ec5a13;
+  /* color: #ec5a13;
+  border: 2px solid #ec5a13; */
 }
 
 .logo {

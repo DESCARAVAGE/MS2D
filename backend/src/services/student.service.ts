@@ -1,5 +1,7 @@
 import { ILike, DeleteResult } from "typeorm"; // Ilike n'est pas sensible à la casse contrairement à Like.
-import { Student } from "../entities/student";
+import { Student } from "../entities/student.entity";
+import { Group } from "../entities/group.entity";
+import { UpdateStudentInputType } from "../types/student/UpdateStudentInputType";
 
 export function findStudentById(id: number): Promise<Student | null> {
   return Student.findOne({
@@ -8,7 +10,7 @@ export function findStudentById(id: number): Promise<Student | null> {
 }
 
 export async function getAllStudents(): Promise<Student[]> {
-  const allStudent = await Student.find();
+  const allStudent = await Student.find({ relations: ["group"] });
   if (allStudent.length === 0) {
     throw new Error("the BDD is empty...");
   } else {
@@ -41,9 +43,26 @@ export async function getStudentsByterms(terms: string = ''): Promise<Student[]>
   }
 }
 
+export async function getStudentsByGroup(groupId: number): Promise<Student[] | null> {
+  try {
+    const student = groupId
+    ? await Student.find({where: { group: {id: groupId} }})
+    : null;
+    if (student  && student.length > 0) {
+      return student;
+    } else {
+      throw new Error("not students in this group");
+    }
+  } catch (error) {
+    // Gérer les erreurs qui pourraient survenir pendant la recherche
+    throw new Error(error instanceof Error ? error.message : "An unexpected error occurred.");
+  }
+}
+
 export async function create(StudentData: {
   firstname: string;
   lastname: string;
+  group?: number;
 }): Promise<String | Student> {
   // Vérifier si le pays existe déjà
   const existingStudent = await Student.findOne({ where: { firstname: StudentData.firstname } });
@@ -57,23 +76,28 @@ export async function create(StudentData: {
   const student = new Student();
   student.firstname = StudentData.firstname;
   student.lastname = StudentData.lastname;
+  student.group = {
+    id: StudentData.group,
+  } as Group;
 
   return await student.save();
 }
 
 export async function updateStudent(
-  id: number,
-  Student: Student
+  student: UpdateStudentInputType,
 ): Promise<Student | undefined> {
-  const StudentToUpdate = await findStudentById(id);
+  const StudentToUpdate = await findStudentById(student.id);
 
   if (!StudentToUpdate) {
     throw new Error("Student not found..");
   }
 
   if (StudentToUpdate) {
-    StudentToUpdate.firstname = Student.firstname;
-    StudentToUpdate.lastname = Student.lastname;
+    StudentToUpdate.firstname = student.firstname;
+    StudentToUpdate.lastname = student.lastname;
+    StudentToUpdate.group = {
+      id: student.group,
+    } as Group;
 
     return StudentToUpdate.save();
   }

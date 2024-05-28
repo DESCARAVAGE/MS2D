@@ -3,13 +3,23 @@ import * as studentService from "../services/student.service";
 import { CreateStudentInputType } from "../types/student/CreateStudentInputType copy";
 import { UpdateStudentInputType } from "../types/student/UpdateStudentInputType";
 import { DeleteStudentResult } from "../services/student.service";
-import { Student } from "../entities/student";
+import { Student } from "../entities/student.entity";
 
 @Resolver(Student)
 export class StudentResolver {
+  @Query(() => Student)
+  getOneStudent(@Arg("id") id: number): Promise<Student | null> {
+    return studentService.findStudentById(id);
+  }
+
   @Query(() => [Student])
   async getAllStudents(): Promise<Student[]> {
     return await studentService.getAllStudents();
+  }
+
+  @Query(() => [Student])
+  async getStudentsByGroup(@Arg("groupId") groupId: number): Promise<Student[] | null> {
+    return await studentService.getStudentsByGroup(groupId);
   }
 
   @Query(() => [Student])
@@ -31,8 +41,8 @@ export class StudentResolver {
   }
 
   @Mutation(() => Student)
-  updateStudent(@Arg("Student") Student: UpdateStudentInputType): Promise<Student | undefined> {
-    return studentService.updateStudent(Student.id, {...Student} as unknown as Student)
+  updateStudent(@Arg("student") student: UpdateStudentInputType): Promise<Student | undefined> {
+    return studentService.updateStudent(student);
   }
 
   @Mutation(() => String)
